@@ -1,4 +1,4 @@
-# 🚀 Étape 1 : Installation d'Apache Airflow sous Windows avec Docker
+<!-- # 🚀 Étape 1 : Installation d'Apache Airflow sous Windows avec Docker
 
 ## 📌 Prérequis
 Avant d'installer Apache Airflow, assurez-vous d'avoir :
@@ -125,4 +125,4 @@ Cela supprimera les volumes liés à Airflow.
 | `docker-compose down` | Arrête Airflow |
 | `docker-compose down --volumes --remove-orphans` | Supprime tous les volumes Airflow |
 
----
+--- -->
