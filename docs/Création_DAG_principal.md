@@ -1,4 +1,4 @@
-# 🚀 Étape " : Création d'un pipeline ETL avec Airflow
+# 🚀 Étape 3 : Création d'un pipeline ETL avec Airflow
 
 ## 🎯 Objectif
 Créer un pipeline ETL (Extract, Transform, Load) avec Airflow pour :
