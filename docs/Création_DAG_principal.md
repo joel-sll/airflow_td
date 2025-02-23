@@ -1,8 +1,4 @@
-Voici un **TD interactif en MkDocs** qui commence par la partie **pipeline France** et guide l'utilisateur étape par étape pour compléter la partie **USA**. Chaque exercice est accompagné de ressources et de documentation pour aider l'utilisateur à progresser sans voir immédiatement les astuces ou solutions. Les sections "Astuce" et "Solution" sont cachées dans des blocs pliables (`???`).
-
----
-
-# 🚀 TD : Création d'un pipeline ETL avec Airflow
+# 🚀 Étape " : Création d'un pipeline ETL avec Airflow
 
 ## 🎯 Objectif
 Créer un pipeline ETL (Extract, Transform, Load) avec Airflow pour :
