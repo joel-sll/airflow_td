@@ -307,7 +307,7 @@ Créer un pipeline ETL (Extract, Transform, Load) avec Airflow pour :
    Vérifiez les données extraites dans l'onglet XCom de la tâche `extract_usa`.
 
 ??? success "Solution complète"
-    ```python
+    ```python { .py .copy }
     def extract_usa():
     """Extraction des données USA"""
         return extraction_ventes("usa")
@@ -342,7 +342,7 @@ Créer un pipeline ETL (Extract, Transform, Load) avec Airflow pour :
    Vérifiez les données transformées dans l'onglet XCom de la tâche `transform_usa`.
 
 ??? success "Solution complète"
-    ```python
+    ```python { .py .copy }
     def transform_usa(**context):
         """Transformation des données USA"""
         ventes_usa = context['ti'].xcom_pull(task_ids='extract_usa')
@@ -367,49 +367,95 @@ Créer un pipeline ETL (Extract, Transform, Load) avec Airflow pour :
     - Assurez-vous que le répertoire de sortie existe.
 
 ??? example "Code initial"
-    ```python
-    import pandas as pd
-
+    ```python { .py .copy }
     def load_data(**context):
-        """Charge les données transformées dans un fichier CSV."""
-        data_france = context['ti'].xcom_pull(task_ids='transform_france')
-        data_usa = context['ti'].xcom_pull(task_ids='transform_usa')
-        df = pd.DataFrame([data_france, data_usa])
-        df.to_csv('output/ventes.csv', index=False)
+        """Chargement des données transformées"""
+        try:
+            # Récupérer les données transformées
+            ventes_usa = context['......'].xcom_pull(task_ids='......')
+            ventes_france = context['......'].xcom_pull(task_ids='......')
+            
+            # Combiner les données
+            toutes_ventes = ventes_usa + ventes_france
+            
+            # Créer le DataFrame
+            df = pd.DataFrame(toutes_ventes)
+            
+            # Gérer le fichier existant
+            if os.path.exists(CSV_FILE):
+                df_existant = pd.read_csv(CSV_FILE)
+                df = pd.concat([df_existant, df], ignore_index=True)
+            
+            # Sauvegarder
+            df.to_csv(CSV_FILE, index=False)
+            print(f"✓ Données chargées dans {CSV_FILE}")
+            print(f"✓ Nombre total d'enregistrements: {len(df)}")
+            
+        except Exception as e:
+            print(f"❌ Erreur lors du chargement: {str(e)}")
+            raise
+
+    # Tâche de chargement
+    load_task = PythonOperator(
+         # À compléter
+    )
+
+    # Définition du flux de données
+    # À compléter
     ```
 
-1. Ajoutez la tâche `load_data_task` avec :
+1. Complétez la fonction `load_data` en utilisant XCom
+2. Ajoutez la tâche `load_data_task` avec :
    
       - `task_id='load_data'`
       - `python_callable=load_data`
       - `provide_context=True`
       - `dag=dag`
 
-2. Définissez le flux de données entre les tâches.
+3. Définissez le flux de données entre les tâches.
 
-3. 🔍 Vérification :
+4. 🔍 Vérification :
    
-   Vérifiez que le fichier `output/ventes.csv` est créé avec les données correctes.
+   Vérifiez que le fichier `data/ventes_transformed.csv` est créé avec les données correctes.
 
 ??? success "Solution complète"
-    ```python
+    ```python { .py .copy }
     def load_data(**context):
-        """Charge les données transformées dans un fichier CSV."""
-        data_france = context['ti'].xcom_pull(task_ids='transform_france')
-        data_usa = context['ti'].xcom_pull(task_ids='transform_usa')
-        df = pd.DataFrame([data_france, data_usa])
-        os.makedirs('output', exist_ok=True)
-        df.to_csv('output/ventes.csv', index=False)
-
-    load_data_task = PythonOperator(
+        """Chargement des données transformées"""
+        try:
+            # Récupérer les données transformées
+            ventes_usa = context['task_instance'].xcom_pull(task_ids='transform_usa')
+            ventes_france = context['task_instance'].xcom_pull(task_ids='transform_france')
+            
+            # Combiner les données
+            toutes_ventes = ventes_usa + ventes_france
+            
+            # Créer le DataFrame
+            df = pd.DataFrame(toutes_ventes)
+            
+            # Gérer le fichier existant
+            if os.path.exists(CSV_FILE):
+                df_existant = pd.read_csv(CSV_FILE)
+                df = pd.concat([df_existant, df], ignore_index=True)
+            
+            # Sauvegarder
+            df.to_csv(CSV_FILE, index=False)
+            print(f"✓ Données chargées dans {CSV_FILE}")
+            print(f"✓ Nombre total d'enregistrements: {len(df)}")
+            
+        except Exception as e:
+            print(f"❌ Erreur lors du chargement: {str(e)}")
+            raise
+    # Tâche de chargement
+    load_task = PythonOperator(
         task_id='load_data',
         python_callable=load_data,
         provide_context=True,
         dag=dag,
     )
-
-    # Définition du flux
-    [transform_france_task, transform_usa_task] >> load_data_task
+    # Définition du flux de données
+    extract_usa_task >> transform_usa_task >> load_task
+    extract_france_task >> transform_france_task >> load_task
     ```
 
 ---
@@ -421,7 +467,7 @@ Créer un pipeline ETL (Extract, Transform, Load) avec Airflow pour :
     - Ajoutez des calculs supplémentaires comme la moyenne ou le total des ventes.
 
 ??? example "Code initial"
-    ```python
+    ```python { .py .copy }
     def generate_report(**context):
         """Génère un rapport consolidé."""
         df = pd.read_csv('output/ventes.csv')

@@ -34,7 +34,7 @@ Si `curl` ne fonctionne pas, téléchargez le fichier manuellement depuis :
 
 Exécutez la commande suivante pour créer les répertoires (ou dossier) :
 ```command
-mkdir dags, logs, plugins
+mkdir dags, logs, plugins, data 
 ```
 
 Si PowerShell ne supporte pas plusieurs dossiers, exécutez-les séparément :
@@ -42,6 +42,7 @@ Si PowerShell ne supporte pas plusieurs dossiers, exécutez-les séparément :
 mkdir dags
 mkdir logs
 mkdir plugins
+mkdir data
 ```
 
 ---
