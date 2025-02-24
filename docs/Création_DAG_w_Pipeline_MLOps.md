@@ -1,9 +1,10 @@
-# 🚀 Étape 3 : Création d'un Pipeline MLOps avec Airflow
+# 🚀 Étape 4 :  Pipeline MLOps avec Airflow et Docker
 
 ## **Objectif**
 L'objectif de cet exercice est de mettre en place un **pipeline MLOps automatisé** avec **Apache Airflow** et **Docker** pour gérer l'entraînement et l'évaluation d'un modèle de classification sur le dataset **Iris**.
 
 Nous allons :
+
 1. **Charger et prétraiter les données** 📊
 2. **Entraîner un modèle RandomForest** 🎯
 3. **Évaluer la performance du modèle** 📈
@@ -13,7 +14,7 @@ Nous allons :
 
 ## 📂 **Structure du projet**
 
-```plaintext
+```plaintext 
 mlops/
 │── airflow-docker/
 │   ├── dags/                      # Contient les DAGs (workflow Airflow)
@@ -38,7 +39,7 @@ mlops/
 **📌 Objectif :** Charger et nettoyer les données Iris, puis les sauvegarder.
 
 📍 **Fichier : `src/preprocessing.py`**
-```python
+```python {.copy}
 import os
 import pandas as pd
 from sklearn.datasets import load_iris
@@ -69,7 +70,7 @@ def preprocess_data():
 **📌 Objectif :** Entraîner un modèle `RandomForestClassifier` et sauvegarder le modèle.
 
 📍 **Fichier : `src/training.py`**
-```python
+```python {.copy}
 import os
 import pandas as pd
 import joblib
@@ -109,7 +110,7 @@ def train_model():
 **📌 Objectif :** Calculer la précision du modèle et sauvegarder le score.
 
 📍 **Fichier : `src/evaluation.py`**
-```python
+```python {.copy}
 import os
 import pandas as pd
 import joblib
@@ -151,7 +152,7 @@ def evaluate_model():
 
 ## **4️⃣ Étape 4 - DAG Airflow**
 📍 **Fichier : `dags/mlops_pipeline.py`**
-```python
+```python {.copy}
 import logging
 from datetime import datetime, timedelta
 from airflow.models.dag import DAG
@@ -160,7 +161,7 @@ from airflow.operators.python import PythonOperator
 from src.preprocessing import preprocess_data
 from src.training import train_model
 from src.evaluation import evaluate_model
-from src.generate_report import generate_report
+
 
 default_args = {
     'owner': 'mlops-airflow',
@@ -170,114 +171,96 @@ default_args = {
 }
 
 dag = DAG('mlops_pipeline',
-         default_args=default_args,
-         schedule_interval=timedelta(days=1),
-         catchup=False
+    # À compléter
 )
 
 task_1 = PythonOperator(
-    task_id='preprocess_data',
-    python_callable=preprocess_data,
-    dag=dag
+    # À compléter
 )
 
 task_2 = PythonOperator(
-    task_id='train_model',
-    python_callable=train_model,
-    dag=dag
+    # À compléter
 )
 
 task_3 = PythonOperator(
-    task_id='evaluate_model',
-    python_callable=evaluate_model,
-    dag=dag
+    # À compléter
 )
 
-task_1 >> task_2 >> task_3
+task_1 >> # À compléter 
+task_1 << # À compléter
 ```
+
+
+
+??? example "Afficher la solution"
+    ```python {.copy}
+    import logging
+    from datetime import datetime, timedelta
+    from airflow.models.dag import DAG
+    from airflow.operators.python import PythonOperator
+
+    from src.preprocessing import preprocess_data
+    from src.training import train_model
+    from src.evaluation import evaluate_model
+
+
+    default_args = {
+        'owner': 'mlops-airflow',
+        'retries': 1,
+        'retry_delay': timedelta(minutes=10),
+        'start_date': datetime.now(),
+    }
+
+    dag = DAG('mlops_pipeline',
+            default_args=default_args,
+            schedule_interval=timedelta(days=1),
+            catchup=False
+    )
+
+    task_1 = PythonOperator(
+        task_id='preprocess_data',
+        python_callable=preprocess_data,
+        dag=dag
+    )
+
+    task_2 = PythonOperator(
+        task_id='train_model',
+        python_callable=train_model,
+        dag=dag
+    )
+
+    task_3 = PythonOperator(
+        task_id='evaluate_model',
+        python_callable=evaluate_model,
+        dag=dag
+    )
+
+    task_1 >> task_2 >> task_3
+    ```
 
 ---
 
 ## **5️⃣ Lancer le pipeline**
 1️⃣ **Démarrer Airflow avec Docker**
-```sh
+
+<span style="color:red">Modifier la ligne 71 du `docker-compose.yml` pour ajouter les dépendances : :</span>
+
+<span style="color:red">
+```yaml {.copy}
+    _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:- pandas requests scikit-learn numpy logging}
+```
+</span>
+
+```sh  {.copy}
 docker-compose up
 ```
 
 2️⃣ **Accéder à Airflow**
+
 - Ouvrir **http://localhost:8080**
 - Activer et exécuter le DAG `mlops_pipeline`
 
 ---
-
-## Gestion des erreurs de modules dans Apache Airflow avec Docker
-
-### 📌 La méthode la plus simple
-La façon la plus simple d’ajouter vos dépendances est de modifier le fichier `docker-compose.yaml`. 
-
-- **Étape 1** : Rendez-vous à la **ligne 71** du fichier `docker-compose.yaml`.
-- **Étape 2** : Ajoutez tous les modules Python dont vous avez besoin à la variable `_PIP_ADDITIONAL_REQUIREMENTS`.
-
-Cependant, pour une gestion plus propre et plus professionnelle des dépendances, il est recommandé d’adopter une approche plus robuste en construisant une image Docker personnalisée.
-
-🔗 **Pour en savoir plus sur la bonne manière de gérer les dépendances, consultez la documentation officielle d'Airflow :**  
-[Airflow Docker Customization](https://airflow.apache.org/docs/docker-stack/build.html#example-of-adding-pypi-package)
-
----
-
-### 🚀 Installation propre des dépendances avec Dockerfile
-
-#### **Étape 1 : Créer un Dockerfile**
-Afin de pouvoir installer les modules nécessaires via un fichier `requirements.txt`, commencez par créer un `Dockerfile` dans le même dossier que `docker-compose.yaml`.
-
-Assurez-vous également d’avoir un fichier `requirements.txt` listant vos dépendances.
-
----
-
-### ⚠️ **Attention aux dépendances spécifiques**
-Certaines bibliothèques nécessitent des dépendances système spécifiques. 
-Par exemple, `scikit-learn` a besoin de `gcc`, `g++`, `make` et `python3-dev` pour être compilé correctement.
-
-Ajoutez donc ces dépendances dans le `Dockerfile` avant d'installer `requirements.txt` :
-
-```dockerfile
-FROM apache/airflow:2.10.5
-
-USER root
-
-RUN apt-get update && apt-get install -y \
-    gcc g++ make python3-dev
-
-USER airflow
-
-COPY requirements.txt /requirements.txt
-
-RUN pip install --no-cache-dir "apache-airflow==${AIRFLOW_VERSION}" -r /requirements.txt
-
-```
-
-#### **Étape 2 : Modifier le `docker-compose.yaml`**
-
-Dans le fichier `docker-compose.yaml` :
-- **Commentez** la ligne 52 :
-  ```yaml
-  # image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.10.5}
-  ```
-- **Décommentez** la ligne 53 pour utiliser le Dockerfile que nous avons créé :
-  ```yaml
-  build: .
-  ```
-
-#### **Étape 3 : Construire et lancer les conteneurs**
-Exécutez les commandes suivantes pour reconstruire et démarrer l’application :
-```sh
-docker-compose build
-docker-compose up -d
-```
-
-Avec cette approche, votre environnement Airflow est bien configuré et prêt à exécuter des tâches avec toutes les dépendances requises. ✅
-
-🎯 **Félicitations !** Tu as maintenant un pipeline MLOps complet avec **Airflow** pour **entraîner, évaluer et automatiser** un modèle de classification Iris ! 🚀
 
 ## **6️⃣ Génération du rapport**
 
@@ -287,7 +270,7 @@ Maintenant qu'on a `accuracy`, nous allons générer un rapport contenant cette 
 
 📍 **Fichier : `src/generate_report.py`**
 
-```python
+```python {.copy}
 import os
 
 def generate_report(**kwargs):
@@ -317,18 +300,31 @@ def generate_report(**kwargs):
 Nous avons ajouté la génération du rapport, nous devons mettre à jour le **DAG** pour inclure cette nouvelle tâche.
 
 📍 **Fichier : `mlops_pipeline.py`**
-```python
+
+```python  {.copy}
 from src.generate_report import generate_report
 
 task_4 = PythonOperator(
-    task_id='generate_report',
-    python_callable=generate_report,
-    provide_context=True,
-    dag=dag
+    # À compléter
 )
 
 task_3 >> task_4
 ```
+
+??? success "Solution complète"
+    ```python  {.copy}
+    from src.generate_report import generate_report
+
+    task_4 = PythonOperator(
+        task_id='generate_report',
+        python_callable=generate_report,
+        provide_context=True,
+        dag=dag
+    )
+
+    task_3 >> task_4
+    ```
+
 
 Pour s'assurer `evaluate_model`  envoie correctement l'accuracy et que `task_3` récupère bien la valeur transmise, on doit faire certaine modification.
 
@@ -337,7 +333,7 @@ Pour s'assurer `evaluate_model`  envoie correctement l'accuracy et que `task_3` 
 Dans **`src/evaluation.py`**, nous devons nous assurer que l'accuracy est bien stockée dans XCom et récupérable par les tâches suivantes.
 
 📍 **Fichier : `src/evaluation.py`**
-```python
+```python  {.copy}
 import os
 import pandas as pd
 import joblib
@@ -375,7 +371,6 @@ def evaluate_model(**kwargs):
     ti.xcom_push(key='accuracy', value=accuracy)
 
     return accuracy
-
 ```
 
 ### **📌 Modifier `task_3` dans `mlops_pipeline.py` pour recevoir les données correctement**
@@ -383,17 +378,30 @@ def evaluate_model(**kwargs):
 Dans **`mlops_pipeline.py`**, nous devons nous assurer que `task_3` (évaluation) est bien configuré pour recevoir et transmettre les données.
 
 📍 **Fichier : `mlops_pipeline.py`**
-```python
+
+```python  {.copy}
 from src.evaluation import evaluate_model
 
 task_3 = PythonOperator(
     task_id='evaluate_model',
-    python_callable=evaluate_model,
-    provide_context=True,  # ✅ Assurer le passage des données via XCom
-    dag=dag
+    # À compléter
 )
 ```
+??? success "Solution complète"
+    ```python  {.copy}
+    from src.evaluation import evaluate_model
+
+    task_3 = PythonOperator(
+        task_id='evaluate_model',
+        python_callable=evaluate_model,
+        provide_context=True,  # ✅ Assurer le passage des données via XCom
+        dag=dag
+    )
+    ```
 
 Une fois ces modifications effectuées, `evaluate_model` enverra correctement l'accuracy, et `task_3` récupérera et transmettra bien les données pour `generate_report`.
+
+
+
 
 

@@ -1,4 +1,4 @@
-# 🚀 Étape 3 : Création d'un pipeline ETL avec Airflow
+# 🚀 Étape 4 : Création d'un pipeline ETL avec Airflow
 
 ## 🎯 Objectif
 
@@ -159,8 +159,33 @@ Créer un pipeline ETL (Extract, Transform, Load) avec Airflow pour :
    
    Lancez le DAG `etl_ventes_pipeline`, double-cliquez sur `extract_france_task` et vérifiez les données extraites dans l'onglet XCom.
 
-??? example "Afficher la solution" 
-    Bientôt disponible !
+??? success "Solution complète"
+    ```python { .py .copy }
+    # Configuration du DAG
+    default_args = {
+        'owner': 'votre_nom',
+        'depends_on_past': False,
+        'start_date': datetime(2025, 2, 25),
+        'retries': 2,
+        'retry_delay': timedelta(minutes=10),
+    }
+
+    # Création du DAG
+    dag = DAG(
+        'etl_ventes_pipeline',
+        default_args=default_args,
+        description='Pipeline ETL pour les données de vente',
+        schedule_interval=timedelta(minutes=5),
+        catchup=False,
+    )
+
+    # Tâche d'extraction France
+    extract_france_task = PythonOperator(
+        task_id='extract_france',
+        python_callable=extract_france,
+        dag=dag,
+    )
+    ```
 
 ---
 
@@ -206,12 +231,12 @@ Créer un pipeline ETL (Extract, Transform, Load) avec Airflow pour :
 
 2. Complétez la fonction `transform_france` en utilisant XCom :
    
-    [Doc xcoms](https://airflow.apache.org/docs/apache-airflow/stable/core-concepts/xcoms.html)
-    
-    ```python
-    ventes_france = context['ti'].xcom_pull(task_ids='........')
-    return transformation_ventes(ventes_france, "France")
-    ```
+   [Doc xcoms](https://airflow.apache.org/docs/apache-airflow/stable/core-concepts/xcoms.html)
+   
+   ```python
+   ventes_france = context['ti'].xcom_pull(task_ids='........')
+   return transformation_ventes(ventes_france, "France")
+   ```
 
 
 3. Complétez la tâche `transform_france_task` avec :
@@ -227,8 +252,40 @@ Créer un pipeline ETL (Extract, Transform, Load) avec Airflow pour :
    
    Vérifiez les données transformées dans l'onglet XCom de la tâche `transform_france`.
 
-??? example "Afficher la solution" 
-    Bientôt disponible !
+??? success "Solution complète"
+    ```python { .py .copy }
+    def transformation_ventes(ventes, pays):
+    """
+    Transforme les données de vente en convertissant les prix en GBP.
+    """
+    ventes_transformees = []
+    for vente in ventes:
+        vente_transformee = vente.copy()     
+        # Sélectionner le taux de conversion approprié
+        taux = (TAUX_CONVERSION['EUR_TO_GBP'] 
+                if vente['devise_origine'] == 'EUR' 
+                else TAUX_CONVERSION['USD_TO_GBP'])
+        # Convertir les prix en GBP
+        vente_transformee['prix_unitaire_gbp'] = round(vente['prix_unitaire_original'] * taux, 2)
+        vente_transformee['prix_total_gbp'] = round(vente['prix_total_original'] * taux, 2)
+        vente_transformee['taux_conversion'] = taux
+        vente_transformee['date_transformation'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        ventes_transformees.append(vente_transformee)
+    print(f"✓ Transformation des données de {pays} terminée")
+    return ventes_transformees
+
+    def transform_france(**context):
+        """Transformation des données France"""
+        ventes_france = context['task_instance'].xcom_pull(task_ids='extract_france')
+        return transformation_ventes(ventes_france, "France")
+
+    transform_france_task = PythonOperator(
+        task_id='transform_france',
+        python_callable=transform_france,
+        provide_context=True,
+        dag=dag,
+    )
+    ```
 
 ---
 
@@ -251,8 +308,18 @@ Créer un pipeline ETL (Extract, Transform, Load) avec Airflow pour :
    
    Vérifiez les données extraites dans l'onglet XCom de la tâche `extract_usa`.
 
-??? example "Afficher la solution" 
-    Bientôt disponible !
+??? success "Solution complète"
+    ```python { .py .copy }
+    def extract_usa():
+    """Extraction des données USA"""
+        return extraction_ventes("usa")
+    # Tâches d'extraction
+    extract_usa_task = PythonOperator(
+        task_id='extract_usa',
+        python_callable=extract_usa,
+        dag=dag,
+    )
+    ```
 
 ---
 
@@ -276,8 +343,22 @@ Créer un pipeline ETL (Extract, Transform, Load) avec Airflow pour :
    
    Vérifiez les données transformées dans l'onglet XCom de la tâche `transform_usa`.
 
-??? example "Afficher la solution" 
-    Bientôt disponible !
+??? success "Solution complète"
+    ```python { .py .copy }
+    def transform_usa(**context):
+        """Transformation des données USA"""
+        ventes_usa = context['ti'].xcom_pull(task_ids='extract_usa')
+        return {"region": "USA", "total_ventes": sum(ventes_usa["ventes"])}
+
+    transform_usa_task = PythonOperator(
+        task_id='transform_usa',
+        python_callable=transform_usa,
+        provide_context=True,
+        dag=dag,
+    )
+    # Définition du flux
+    extract_usa_task >> transform_usa_task
+    ```
 
 ---
 
@@ -339,8 +420,45 @@ Créer un pipeline ETL (Extract, Transform, Load) avec Airflow pour :
    
    Vérifiez que le fichier `data/ventes_transformed.csv` est créé avec les données correctes.
 
-??? example "Afficher la solution" 
-    Bientôt disponible !
+??? success "Solution complète"
+    ```python { .py .copy }
+    def load_data(**context):
+        """Chargement des données transformées"""
+        try:
+            # Récupérer les données transformées
+            ventes_usa = context['task_instance'].xcom_pull(task_ids='transform_usa')
+            ventes_france = context['task_instance'].xcom_pull(task_ids='transform_france')
+            
+            # Combiner les données
+            toutes_ventes = ventes_usa + ventes_france
+            
+            # Créer le DataFrame
+            df = pd.DataFrame(toutes_ventes)
+            
+            # Gérer le fichier existant
+            if os.path.exists(CSV_FILE):
+                df_existant = pd.read_csv(CSV_FILE)
+                df = pd.concat([df_existant, df], ignore_index=True)
+            
+            # Sauvegarder
+            df.to_csv(CSV_FILE, index=False)
+            print(f"✓ Données chargées dans {CSV_FILE}")
+            print(f"✓ Nombre total d'enregistrements: {len(df)}")
+            
+        except Exception as e:
+            print(f"❌ Erreur lors du chargement: {str(e)}")
+            raise
+    # Tâche de chargement
+    load_task = PythonOperator(
+        task_id='load_data',
+        python_callable=load_data,
+        provide_context=True,
+        dag=dag,
+    )
+    # Définition du flux de données
+    extract_usa_task >> transform_usa_task >> load_task
+    extract_france_task >> transform_france_task >> load_task
+    ```
 
 ---
 
@@ -406,8 +524,59 @@ Créer un pipeline ETL (Extract, Transform, Load) avec Airflow pour :
    
    Vérifiez que le rapport est généré correctement.
 
-??? example "Afficher la solution" 
-    Bientôt disponible !
+??? success "Solution complète"
+    ```python
+    def generate_report(**context):
+        """Génère un rapport détaillé des ventes"""
+        try:
+            df = pd.read_csv(CSV_FILE)
+            
+            # Analyses
+            rapport = []
+            rapport.append("=== RAPPORT DES VENTES ===\n")
+            
+            # Totaux par pays
+            totaux_pays = df.groupby('pays')['prix_total_gbp'].sum()
+            rapport.append("\nTotaux par pays (GBP):")
+            for pays, total in totaux_pays.items():
+                rapport.append(f"{pays}: £{total:.2f}")
+            
+            # Meilleurs vendeurs
+            top_vendeurs = df.groupby('vendeur')['prix_total_gbp'].sum().sort_values(ascending=False).head(3)
+            rapport.append("\nTop 3 des vendeurs:")
+            for vendeur, ventes in top_vendeurs.items():
+                rapport.append(f"{vendeur}: £{ventes:.2f}")
+            
+            # Produits les plus vendus
+            top_produits = df.groupby('produit')['quantite_vendue'].sum().sort_values(ascending=False).head(3)
+            rapport.append("\nTop 3 des produits:")
+            for produit, quantite in top_produits.items():
+                rapport.append(f"{produit}: {quantite} unités")
+            
+            rapport_final = "\n".join(rapport)
+            
+            # Sauvegarder le rapport
+            with open(REPORT_FILE, 'w', encoding='utf-8') as f:
+                f.write(rapport_final)
+            
+            print(f"✓ Rapport généré dans {REPORT_FILE}")
+            return rapport_final
+            
+        except Exception as e:
+            print(f"❌ Erreur lors de la génération du rapport: {str(e)}")
+            raise
+
+    generate_report_task = PythonOperator(
+        task_id='generate_report',
+        python_callable=generate_report,
+        provide_context=True,
+        dag=dag,
+    )
+
+
+    # Définition du flux
+    load_task >> generate_report_task
+    ```
 
 ---
 
