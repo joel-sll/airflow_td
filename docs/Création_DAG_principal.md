@@ -30,16 +30,105 @@ Créer un pipeline ETL (Extract, Transform, Load) avec Airflow pour :
       - Utilisez `datetime.now()` pour la date de début.
 
 ??? example "Code initial"
-    ```python
+    ```python { .py .copy }
     from airflow import DAG
     from airflow.operators.python_operator import PythonOperator
     from datetime import datetime, timedelta
+    import random
+    import pandas as pd
     import os
 
-    # Fonction d'extraction des données pour la France
+    # Configuration
+    AIRFLOW_HOME = os.getenv('AIRFLOW_HOME', '/opt/airflow')
+    DATA_DIR = os.path.join(AIRFLOW_HOME, 'data')
+    CSV_FILE = os.path.join(DATA_DIR, 'vente.csv')
+    os.makedirs(DATA_DIR, exist_ok=True)
+
+    # Taux de conversion (simulé)
+    TAUX_CONVERSION = {
+        'EUR_TO_GBP': 0.85,  # 1 EUR = 0.85 GBP
+        'USD_TO_GBP': 0.79   # 1 USD = 0.79 GBP
+    }
+
+    # Données des magasins avec prix en devise locale
+    magasins = {
+        "usa": {
+            "pays": "États-Unis",
+            "devise": "USD",
+            "villes": ["New York", "Los Angeles"],
+            "noms_magasin": ["SuperMart USA", "QuickShop USA"],
+            "produits": {
+                "Pommes": 1.80,  # Prix en USD
+                "Bananes": 0.95,
+                "Lait": 2.40,
+                "Pain": 1.45,
+                "Œufs": 3.00
+            },
+            "vendeurs": ["Alice", "Bob", "Charlie", "David", "Eve"]
+        },
+        "france": {
+            "pays": "France",
+            "devise": "EUR",
+            "villes": ["Paris", "Lyon"],
+            "noms_magasin": ["SuperMart France", "QuickShop France"],
+            "produits": {
+                "Pommes": 1.30,  # Prix en EUR
+                "Bananes": 0.70,
+                "Lait": 1.80,
+                "Pain": 1.00,
+                "Œufs": 2.20
+            },
+            "vendeurs": ["Jean", "Marie", "Pierre", "Sophie", "Luc"]
+        }
+    }
+
+    def extraction_ventes(magasin_key):
+        """
+        Extrait les données de vente pour un magasin.
+        """
+        magasin = magasins[magasin_key]
+        ventes = []
+        
+        for produit, prix_unitaire in magasin["produits"].items():
+            for vendeur in magasin["vendeurs"]:
+                ville = random.choice(magasin["villes"])
+                nom_magasin = random.choice(magasin["noms_magasin"])
+                quantite_vendue = random.randint(1, 10)
+                prix_total = quantite_vendue * prix_unitaire
+                
+                ventes.append({
+                    "pays": magasin["pays"],
+                    "devise_origine": magasin["devise"],
+                    "ville": ville,
+                    "nom_magasin": nom_magasin,
+                    "produit": produit,
+                    "prix_unitaire_original": prix_unitaire,
+                    "vendeur": vendeur,
+                    "quantite_vendue": quantite_vendue,
+                    "prix_total_original": prix_total,
+                    "date_vente": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                })
+        
+        return ventes
+
     def extract_france():
-        """Simule l'extraction des données de ventes en France."""
-        return {"ventes": [100, 200, 300]}  # Exemple de données
+        """Extraction des données France"""
+        return extraction_ventes("france")
+
+    # Configuration du DAG
+    default_args = {
+     # À compléter
+    }
+
+    # Création du DAG
+    dag = DAG(
+     # À compléter
+    )
+    
+    # Tâches d'extraction
+    extract_france_task = PythonOperator(
+     # À compléter
+    )
     ```
 
 1. Créez un fichier `etl_ventes_dag.py` dans le dossier `dags` d'Airflow.
@@ -69,12 +158,12 @@ Créer un pipeline ETL (Extract, Transform, Load) avec Airflow pour :
    Lancez le DAG `etl_ventes_pipeline`, double-cliquez sur `extract_france_task` et vérifiez les données extraites dans l'onglet XCom.
 
 ??? success "Solution complète"
-    ```python
+    ```python { .py .copy }
     # Configuration du DAG
     default_args = {
         'owner': 'votre_nom',
         'depends_on_past': False,
-        'start_date': datetime(2023, 10, 1),
+        'start_date': datetime(2025, 2, 25),
         'retries': 2,
         'retry_delay': timedelta(minutes=10),
     }
@@ -106,20 +195,47 @@ Créer un pipeline ETL (Extract, Transform, Load) avec Airflow pour :
        - Les opérateurs de dépendance `>>` ou `<<` définissent l'ordre d'exécution.
 
 ??? example "Code initial"
-    ```python
+    ```python { .py .copy }
+    def transformation_ventes(ventes, pays):
+        """
+        Transforme les données de vente en convertissant les prix en GBP.
+        """
+        ventes_transformees = []
+        for vente in ventes:
+            vente_transformee = vente.copy()     
+            # Sélectionner le taux de conversion approprié
+            taux = (TAUX_CONVERSION['EUR_TO_GBP'] 
+                    if vente['devise_origine'] == 'EUR' 
+                    else TAUX_CONVERSION['USD_TO_GBP'])
+            # Convertir les prix en GBP
+            vente_transformee['prix_unitaire_gbp'] = round(vente['prix_unitaire_original'] * taux, 2)
+            vente_transformee['prix_total_gbp'] = round(vente['prix_total_original'] * taux, 2)
+            vente_transformee['taux_conversion'] = taux
+            vente_transformee['date_transformation'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            ventes_transformees.append(vente_transformee)
+        print(f"✓ Transformation des données de {pays} terminée")
+        return ventes_transformees
+
     def transform_france(**context):
         """Transformation des données France"""
-        ventes_france = context['ti'].xcom_pull(task_ids='extract_france')
-        return {"region": "France", "total_ventes": sum(ventes_france["ventes"])}
+        pass
+
+    transform_france_task = PythonOperator(
+    # À compléter
+    )
     ```
 
 1. Ajoutez le code de transformation dans le fichier `etl_ventes_dag.py`.
 
 2. Complétez la fonction `transform_france` en utilisant XCom :
+   
+   [Doc xcoms](https://airflow.apache.org/docs/apache-airflow/stable/core-concepts/xcoms.html)
+   
    ```python
-   ventes_france = context['ti'].xcom_pull(task_ids='extract_france')
+   ventes_france = context['ti'].xcom_pull(task_ids='........')
    return transformation_ventes(ventes_france, "France")
    ```
+
 
 3. Complétez la tâche `transform_france_task` avec :
    
@@ -135,11 +251,31 @@ Créer un pipeline ETL (Extract, Transform, Load) avec Airflow pour :
    Vérifiez les données transformées dans l'onglet XCom de la tâche `transform_france`.
 
 ??? success "Solution complète"
-    ```python
+    ```python { .py .copy }
+    def transformation_ventes(ventes, pays):
+    """
+    Transforme les données de vente en convertissant les prix en GBP.
+    """
+    ventes_transformees = []
+    for vente in ventes:
+        vente_transformee = vente.copy()     
+        # Sélectionner le taux de conversion approprié
+        taux = (TAUX_CONVERSION['EUR_TO_GBP'] 
+                if vente['devise_origine'] == 'EUR' 
+                else TAUX_CONVERSION['USD_TO_GBP'])
+        # Convertir les prix en GBP
+        vente_transformee['prix_unitaire_gbp'] = round(vente['prix_unitaire_original'] * taux, 2)
+        vente_transformee['prix_total_gbp'] = round(vente['prix_total_original'] * taux, 2)
+        vente_transformee['taux_conversion'] = taux
+        vente_transformee['date_transformation'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        ventes_transformees.append(vente_transformee)
+    print(f"✓ Transformation des données de {pays} terminée")
+    return ventes_transformees
+
     def transform_france(**context):
         """Transformation des données France"""
-        ventes_france = context['ti'].xcom_pull(task_ids='extract_france')
-        return {"region": "France", "total_ventes": sum(ventes_france["ventes"])}
+        ventes_france = context['task_instance'].xcom_pull(task_ids='extract_france')
+        return transformation_ventes(ventes_france, "France")
 
     transform_france_task = PythonOperator(
         task_id='transform_france',
@@ -147,9 +283,6 @@ Créer un pipeline ETL (Extract, Transform, Load) avec Airflow pour :
         provide_context=True,
         dag=dag,
     )
-
-    # Définition du flux
-    extract_france_task >> transform_france_task
     ```
 
 ---
@@ -162,14 +295,8 @@ Créer un pipeline ETL (Extract, Transform, Load) avec Airflow pour :
        - Suivez la même structure que pour la France.
        - Utilisez une fonction `extract_usa` pour simuler l'extraction des données.
 
-??? example "Code initial"
-    ```python
-    def extract_usa():
-        """Simule l'extraction des données de ventes aux USA."""
-        return {"ventes": [500, 600, 700]}  # Exemple de données
-    ```
-
-1. Définissez la tâche `extract_usa_task` avec :
+ 
+1. Définissez la tâche `extract_usa_task`  et la  fonction  `extract_usa` avec :
    
       - `task_id='extract_usa'`
       - `python_callable=extract_usa`
@@ -181,7 +308,10 @@ Créer un pipeline ETL (Extract, Transform, Load) avec Airflow pour :
 
 ??? success "Solution complète"
     ```python
-    # Tâche d'extraction USA
+    def extract_usa():
+    """Extraction des données USA"""
+        return extraction_ventes("usa")
+    # Tâches d'extraction
     extract_usa_task = PythonOperator(
         task_id='extract_usa',
         python_callable=extract_usa,
@@ -197,14 +327,7 @@ Créer un pipeline ETL (Extract, Transform, Load) avec Airflow pour :
     - Utilisez la même logique que pour la France.
     - Assurez-vous de bien récupérer les données via `xcom_pull`.
 
-??? example "Code initial"
-    ```python
-    def transform_usa(**context):
-        """Transformation des données USA"""
-        ventes_usa = context['ti'].xcom_pull(task_ids='extract_usa')
-        return {"region": "USA", "total_ventes": sum(ventes_usa["ventes"])}
-    ```
-
+ 
 1. Ajoutez la tâche `transform_usa_task` avec :
    
       - `task_id='transform_usa'`
@@ -231,7 +354,6 @@ Créer un pipeline ETL (Extract, Transform, Load) avec Airflow pour :
         provide_context=True,
         dag=dag,
     )
-
     # Définition du flux
     extract_usa_task >> transform_usa_task
     ```
@@ -348,7 +470,11 @@ Créer un pipeline ETL (Extract, Transform, Load) avec Airflow pour :
 ## 🎉 Résultat final
 
 Vous avez maintenant un pipeline ETL complet avec Airflow qui :
+
 1. Extrait les données de ventes pour la France et les USA.
+   
 2. Transforme les données en calculant le total des ventes.
+   
 3. Charge les données transformées dans un fichier CSV.
+
 4. Génère un rapport consolidé.
