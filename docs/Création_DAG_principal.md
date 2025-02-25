@@ -1,4 +1,4 @@
-# 🚀 Étape 4 : Création d'un pipeline ETL avec Airflow
+# 🚀 Étape 3 : Création d'un pipeline ETL avec Airflow
 
 ## 🎯 Objectif
 
