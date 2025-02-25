@@ -308,8 +308,18 @@ Créer un pipeline ETL (Extract, Transform, Load) avec Airflow pour :
    
    Vérifiez les données extraites dans l'onglet XCom de la tâche `extract_usa`.
 
-??? example "Afficher la solution" 
-    Bientôt disponible !
+??? success "Solution complète"
+    ```python { .py .copy }
+    def extract_usa():
+    """Extraction des données USA"""
+        return extraction_ventes("usa")
+    # Tâches d'extraction
+    extract_usa_task = PythonOperator(
+        task_id='extract_usa',
+        python_callable=extract_usa,
+        dag=dag,
+    )
+    ```
 
 ---
 
@@ -333,8 +343,22 @@ Créer un pipeline ETL (Extract, Transform, Load) avec Airflow pour :
    
    Vérifiez les données transformées dans l'onglet XCom de la tâche `transform_usa`.
 
-??? example "Afficher la solution" 
-    Bientôt disponible !
+??? success "Solution complète"
+    ```python { .py .copy }
+    def transform_usa(**context):
+        """Transformation des données USA"""
+        ventes_usa = context['ti'].xcom_pull(task_ids='extract_usa')
+        return {"region": "USA", "total_ventes": sum(ventes_usa["ventes"])}
+
+    transform_usa_task = PythonOperator(
+        task_id='transform_usa',
+        python_callable=transform_usa,
+        provide_context=True,
+        dag=dag,
+    )
+    # Définition du flux
+    extract_usa_task >> transform_usa_task
+    ```
 
 ---
 
@@ -396,8 +420,45 @@ Créer un pipeline ETL (Extract, Transform, Load) avec Airflow pour :
    
    Vérifiez que le fichier `data/ventes_transformed.csv` est créé avec les données correctes.
 
-??? example "Afficher la solution" 
-    Bientôt disponible !
+??? success "Solution complète"
+    ```python { .py .copy }
+    def load_data(**context):
+        """Chargement des données transformées"""
+        try:
+            # Récupérer les données transformées
+            ventes_usa = context['task_instance'].xcom_pull(task_ids='transform_usa')
+            ventes_france = context['task_instance'].xcom_pull(task_ids='transform_france')
+            
+            # Combiner les données
+            toutes_ventes = ventes_usa + ventes_france
+            
+            # Créer le DataFrame
+            df = pd.DataFrame(toutes_ventes)
+            
+            # Gérer le fichier existant
+            if os.path.exists(CSV_FILE):
+                df_existant = pd.read_csv(CSV_FILE)
+                df = pd.concat([df_existant, df], ignore_index=True)
+            
+            # Sauvegarder
+            df.to_csv(CSV_FILE, index=False)
+            print(f"✓ Données chargées dans {CSV_FILE}")
+            print(f"✓ Nombre total d'enregistrements: {len(df)}")
+            
+        except Exception as e:
+            print(f"❌ Erreur lors du chargement: {str(e)}")
+            raise
+    # Tâche de chargement
+    load_task = PythonOperator(
+        task_id='load_data',
+        python_callable=load_data,
+        provide_context=True,
+        dag=dag,
+    )
+    # Définition du flux de données
+    extract_usa_task >> transform_usa_task >> load_task
+    extract_france_task >> transform_france_task >> load_task
+    ```
 
 ---
 
@@ -463,8 +524,59 @@ Créer un pipeline ETL (Extract, Transform, Load) avec Airflow pour :
    
    Vérifiez que le rapport est généré correctement.
 
-??? example "Afficher la solution" 
-    Bientôt disponible !
+??? success "Solution complète"
+    ```python
+    def generate_report(**context):
+        """Génère un rapport détaillé des ventes"""
+        try:
+            df = pd.read_csv(CSV_FILE)
+            
+            # Analyses
+            rapport = []
+            rapport.append("=== RAPPORT DES VENTES ===\n")
+            
+            # Totaux par pays
+            totaux_pays = df.groupby('pays')['prix_total_gbp'].sum()
+            rapport.append("\nTotaux par pays (GBP):")
+            for pays, total in totaux_pays.items():
+                rapport.append(f"{pays}: £{total:.2f}")
+            
+            # Meilleurs vendeurs
+            top_vendeurs = df.groupby('vendeur')['prix_total_gbp'].sum().sort_values(ascending=False).head(3)
+            rapport.append("\nTop 3 des vendeurs:")
+            for vendeur, ventes in top_vendeurs.items():
+                rapport.append(f"{vendeur}: £{ventes:.2f}")
+            
+            # Produits les plus vendus
+            top_produits = df.groupby('produit')['quantite_vendue'].sum().sort_values(ascending=False).head(3)
+            rapport.append("\nTop 3 des produits:")
+            for produit, quantite in top_produits.items():
+                rapport.append(f"{produit}: {quantite} unités")
+            
+            rapport_final = "\n".join(rapport)
+            
+            # Sauvegarder le rapport
+            with open(REPORT_FILE, 'w', encoding='utf-8') as f:
+                f.write(rapport_final)
+            
+            print(f"✓ Rapport généré dans {REPORT_FILE}")
+            return rapport_final
+            
+        except Exception as e:
+            print(f"❌ Erreur lors de la génération du rapport: {str(e)}")
+            raise
+
+    generate_report_task = PythonOperator(
+        task_id='generate_report',
+        python_callable=generate_report,
+        provide_context=True,
+        dag=dag,
+    )
+
+
+    # Définition du flux
+    load_task >> generate_report_task
+    ```
 
 ---
 
