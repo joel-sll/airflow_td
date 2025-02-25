@@ -35,9 +35,8 @@ Nous allons configurer un DAG pour surveiller un dossier, traiter un fichier CSV
       - Via l'interface utilisateur (GUI) :
         - Allez dans `Admin >> Connections >> +`
         - Remplissez les champs :
-          - Conn Id: `file_sensor_conn`
-          - Conn Type: `File (path)`
-          - Extra: `{"path": "/appdata"}`
+          - Conn Id
+          - Conn Type
 
 3. **Créer le DAG** :
       - Créez un fichier `file_processing_dag.py` dans le dossier `dags`.
@@ -111,7 +110,10 @@ Nous allons créer un DAG avec les tâches suivantes :
    ```python
     # Default arguments for the DAG
     default_args = {
-    # À compléter
+        'owner': 'joel',
+        'retries': 1,
+        'retry_delay': timedelta(minutes=5),
+        'start_date': datetime(2023, 1, 1),  # Adjust this date
     }
    ```
 
@@ -119,7 +121,10 @@ Nous allons créer un DAG avec les tâches suivantes :
    ```python
     # Create the DAG
     with DAG(
-        # À compléter
+        dag_id='filesensor_dag3',
+        default_args=default_args,
+        schedule_interval=timedelta(days=1),  # Adjust the schedule as needed
+        catchup=False,
     ) as dag:
    ```
 
@@ -127,7 +132,12 @@ Nous allons créer un DAG avec les tâches suivantes :
    ```python
     # Define the File Sensor to wait for new CSV files
     wait_for_csv = FileSensor(
-        # À compléter
+        task_id='wait_for_csv',
+        filepath='/appdata/data/*.csv',  # Detect any CSV file in the folder
+        fs_conn_id='data_folder',  # Connection ID for filesystem
+        timeout=60 *2,  # Timeout after 10 minutes
+        poke_interval=10,  # Check every 30 seconds
+        mode='poke',  # Use poke mode to wait for the file
     )
    ```
 
@@ -135,15 +145,18 @@ Nous allons créer un DAG avec les tâches suivantes :
    ```python
      # Define the task to load CSV files into SQLite
      load_task = PythonOperator(
-        # À compléter
+         task_id='load_csv_to_sqlite',
+         python_callable=load_csv_to_sqlite,
+         provide_context=True,
+         outlets=[myfile]
      )
    ```
 
 2. **Ajouter la tâche BashOperator pour archiver le fichier** :
-   Créer une tache pour déplacer le fichier csv qui vient d'être traité dans le dossier archive
    ```python
      archive_csv_task = BashOperator(
-      # À compléter,
+      task_id="archive_csv",
+      bash_command="mv /appdata/data/* /appdata/archive/"
     )
    ```
 
@@ -220,6 +233,90 @@ Pour valider votre DAG :
 ## Solution complète
 
 ??? example "Afficher la solution"
-    Bientôt disponible !
+    ```python
+    import os
+    import glob
+    import pandas as pd
+    import sqlite3
+    from datetime import datetime, timedelta
+    from airflow import DAG, Dataset
+    from airflow.operators.python import PythonOperator
+    from airflow.sensors.filesystem import FileSensor
+    from airflow.operators.bash import BashOperator
+    import logging
+
+    myfile = Dataset("file:///appdata/database/stores.db")
+
+    # Define the SQLite database path
+    DB_PATH = '/appdata/database/stores.db'  # Change this to your SQLite database path
+    DATA_FOLDER = '/appdata/data'  # Change this to your data folder path
+
+    def load_csv_to_sqlite():
+        # # Insert data into sales with corresponding store_id
+        sales = pd.read_csv("/appdata/data/sales_2010.csv")
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute("PRAGMA foreign_keys = ON")  # Enable foreign key support
+        for _, row in sales.iterrows():
+            conn.execute('''
+            INSERT INTO sales (store_id, Dept, Date, Weekly_Sales, IsHoliday) VALUES (?, ?, ?, ?, ?)
+            ''', (row["Store"], row['Dept'], row['Date'], row['Weekly_Sales'], row['IsHoliday']))
+        conn.commit()
+        conn.close()
+        print(sales.head(10))
+
+    def query_db():
+        # Querying the SQLite database to check the data
+        conn = sqlite3.connect(DB_PATH)
+        sales_query = pd.read_sql_query("SELECT * FROM sales", conn)
+        print("\nSales:")
+        print(sales_query)
+
+        conn.close()
+
+
+    # Default arguments for the DAG
+    default_args = {
+        'owner': 'joel',
+        'retries': 1,
+        'retry_delay': timedelta(minutes=5),
+        'start_date': datetime(2023, 1, 1),  # Adjust this date
+    }
+
+    # Create the DAG
+    with DAG(
+        dag_id='filesensor_dag3',
+        default_args=default_args,
+        schedule_interval=timedelta(days=1),  # Adjust the schedule as needed
+        catchup=False,
+    ) as dag:
+
+
+        # Define the File Sensor to wait for new CSV files
+        wait_for_csv = FileSensor(
+            task_id='wait_for_csv',
+            filepath='/appdata/data/*.csv',  # Detect any CSV file in the folder
+            fs_conn_id='data_folder',  # Connection ID for filesystem
+            timeout=60 *2,  # Timeout after 10 minutes
+            poke_interval=10,  # Check every 30 seconds
+            mode='poke',  # Use poke mode to wait for the file
+        )
+
+        # Define the task to load CSV files into SQLite
+        load_task = PythonOperator(
+            task_id='load_csv_to_sqlite',
+            python_callable=load_csv_to_sqlite,
+            provide_context=True,
+            outlets=[myfile]
+        )
+
+        archive_csv_task = BashOperator(
+            task_id="archive_csv",
+            bash_command="mv /appdata/data/* /appdata/archive/"
+        )
+
+
+        # Set task dependencies
+        wait_for_csv >> load_task >> archive_csv_task
+    ```
 
 ---
