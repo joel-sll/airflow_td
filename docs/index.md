@@ -5,6 +5,7 @@ Avant d'installer Apache Airflow, assurez-vous d'avoir :
 
 - **Docker Desktop** installé et en cours d'exécution ([Télécharger ici](https://www.docker.com/products/docker-desktop/))
 
+- [Docs ](https://docs.google.com/document/d/10hvqWLw7EDXJAnFEIWpX1HkxQQksT4OaeNZuaYJ5DHM/edit?tab=t.0)
 ---
 
 ## 🚀 Étape 1 : Créer un dossier pour Airflow
