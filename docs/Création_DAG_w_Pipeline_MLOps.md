@@ -192,8 +192,53 @@ task_1 << # À compléter
 
 
 
-??? success "Solution complète"
-    Bientôt disponible !
+??? example "Afficher la solution"
+    ```python {.copy}
+    import logging
+    from datetime import datetime, timedelta
+    from airflow.models.dag import DAG
+    from airflow.operators.python import PythonOperator
+
+    from src.preprocessing import preprocess_data
+    from src.training import train_model
+    from src.evaluation import evaluate_model
+
+
+    default_args = {
+        'owner': 'mlops-airflow',
+        'retries': 1,
+        'retry_delay': timedelta(minutes=10),
+        'start_date': datetime.now(),
+    }
+
+    dag = DAG('mlops_pipeline',
+            default_args=default_args,
+            schedule_interval=timedelta(days=1),
+            catchup=False
+    )
+
+    task_1 = PythonOperator(
+        task_id='preprocess_data',
+        python_callable=preprocess_data,
+        dag=dag
+    )
+
+    task_2 = PythonOperator(
+        task_id='train_model',
+        python_callable=train_model,
+        dag=dag
+    )
+
+    task_3 = PythonOperator(
+        task_id='evaluate_model',
+        python_callable=evaluate_model,
+        dag=dag
+    )
+
+    task_1 >> task_2 >> task_3
+    ```
+
+---
 
 ## **5️⃣ Lancer le pipeline**
 1️⃣ **Démarrer Airflow avec Docker**
@@ -267,7 +312,18 @@ task_3 >> task_4
 ```
 
 ??? success "Solution complète"
-    Bientôt disponible !
+    ```python  {.copy}
+    from src.generate_report import generate_report
+
+    task_4 = PythonOperator(
+        task_id='generate_report',
+        python_callable=generate_report,
+        provide_context=True,
+        dag=dag
+    )
+
+    task_3 >> task_4
+    ```
 
 
 Pour s'assurer `evaluate_model`  envoie correctement l'accuracy et que `task_3` récupère bien la valeur transmise, on doit faire certaine modification.
@@ -332,7 +388,16 @@ task_3 = PythonOperator(
 )
 ```
 ??? success "Solution complète"
-    Bientôt disponible !
+    ```python  {.copy}
+    from src.evaluation import evaluate_model
+
+    task_3 = PythonOperator(
+        task_id='evaluate_model',
+        python_callable=evaluate_model,
+        provide_context=True,  # ✅ Assurer le passage des données via XCom
+        dag=dag
+    )
+    ```
 
 Une fois ces modifications effectuées, `evaluate_model` enverra correctement l'accuracy, et `task_3` récupérera et transmettra bien les données pour `generate_report`.
 
