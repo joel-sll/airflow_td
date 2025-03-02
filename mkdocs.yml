@@ -4,6 +4,8 @@ theme:
   features:
     - content.tabs
     - content.code.copy
+    - toc.integrate
+    - navigation.sections
 
 
 extra_css:

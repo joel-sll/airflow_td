@@ -1,4 +1,5 @@
 ## 📌 Prérequis
+
 Avant d'installer Apache Airflow, assurez-vous d'avoir :
 
 - **Docker Desktop** installé et en cours d'exécution ([Télécharger ici](https://www.docker.com/products/docker-desktop/))
@@ -31,7 +32,7 @@ Si `curl` ne fonctionne pas, téléchargez le fichier manuellement depuis :
 
 <span style="color:red">
 ```yaml {.copy}
-    _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:- pandas requests scikit-learn numpy logging}
+	_PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:- pandas requests scikit-learn numpy logging}
 ```
 </span>
 ---
