@@ -1,8 +1,10 @@
 site_name: TD Airflow
 theme:
   name: material
-  # palette:
-  #   primary: custom
+  features:
+    - content.tabs
+    - content.code.copy
+
 
 extra_css:
   - stylesheets/extra.css
@@ -23,13 +25,10 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.tasklist:
       custom_checkbox: true
+  - pymdownx.tabbed:
+      alternate_style: true
 
-# nav:
-#   - Overview: index.md
-#   - 0 - Prerequisites: prerequisites.md
-#   - 1 - MLOps: mlops.md
-#   - 2 - NoSQL: nosql.md
-#   - 3 - Spark: spark.md
-#   - 4 - GenAI: genai.md
-#   - 5 - Kubernetes: k8s.md
- 
+nav:
+  - Overview: index.md
+  - 0 - Installation: Installation.md
+  - 1 - Hello World: Hello-world.md
