@@ -6,7 +6,11 @@ theme:
     - content.code.copy
     - toc.integrate
     - navigation.sections
+    - toc.follow
+    - navigation.indexes
 
+extra_javascript:
+  - javascripts/custom.js
 
 extra_css:
   - stylesheets/extra.css
@@ -29,8 +33,12 @@ markdown_extensions:
       custom_checkbox: true
   - pymdownx.tabbed:
       alternate_style: true
+  - toc:
+      permalink: true
+      toc_depth: 1
 
 nav:
   - Overview: index.md
   - 0 - Installation: Installation.md
   - 1 - Hello World: Hello-world.md
+  - 2 - Création d'un DAG simple: DAG_simple.md

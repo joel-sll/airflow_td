@@ -1,4 +1,4 @@
-	## Quick Start
+## Quick Start
 
-	## Set Airflow Home (optional):
+## Set Airflow Home (optional):
 

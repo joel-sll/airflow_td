@@ -1,0 +1,35 @@
+.floating-toc {
+    position: fixed;
+    top: 100px;
+    right: 20px;
+    width: 250px;
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    font-size: 14px;
+    z-index: 1000;
+}
+
+.floating-toc h2 {
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+
+.floating-toc ul {
+    list-style: none;
+    padding: 0;
+}
+
+.floating-toc li {
+    margin: 5px 0;
+}
+
+.floating-toc a {
+    text-decoration: none;
+    color: #007bff;
+}
+
+.floating-toc a:hover {
+    text-decoration: underline;
+}
