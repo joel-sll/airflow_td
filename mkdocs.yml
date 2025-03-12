@@ -8,12 +8,28 @@ theme:
     - navigation.sections
     - toc.follow
     - navigation.indexes
+    - content.presentation
 
 extra_javascript:
   - javascripts/custom.js
 
 extra_css:
   - stylesheets/extra.css
+
+plugins:
+  - search
+  - i18n:
+      docs_structure: folder
+      languages:
+        - locale: en
+          name: English
+          build: true
+        - locale: fr
+          name: Français
+          default: true
+          build: true
+  - slides:
+      template: "layouts/slide_template1.html"  # Custom slide template
 
 markdown_extensions:
   - admonition
@@ -41,4 +57,5 @@ nav:
   - Overview: index.md
   - 0 - Installation: Installation.md
   - 1 - Hello World: Hello-world.md
-  - 2 - Création d'un DAG simple: DAG_simple.md
+  - 2 - Création d'un DAG : DAG_simple.md
+  - 3 - Utilisation de FileSensor : FileSensor.md

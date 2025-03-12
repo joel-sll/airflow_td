@@ -2,14 +2,14 @@ Commençons par un classique de l'informatique : Hello world !
 
 L'idée ici est de créer un DAG qui automatisera le lancement de notre fonction helloworld.
 
-### Etape 1 : Ecrire la fonction helloworld
+### **Etape 1 : Ecrire la fonction helloworld**
 ```python
 def helloworld():
     print("Hello, World!")
 ```
 
-### Etape 2 : Instancier le DAG
-Un DAG doit **obligatoirement** avoir les arguments suivants :
+### **Etape 2 : Instancier le DAG**
+Un DAG doit **obligatoirement** recevoir les arguments suivants :
 
 - *dag_id* : est une chaine de caractère sans espaces.
 - *schedule_interval* : est une chaine de caractère, un objet timedelta ou None. ([Voir ici](https://airflow.apache.org/docs/apache-airflow/1.10.1/scheduler.html#dag-runs))
@@ -25,7 +25,7 @@ with DAG(
 
 Le DAG ci-dessus s'appelle "hello-world". Il est prévu qu'il s'exécute chaque jour (`schedule_interval='@daily'`) à partir du 1er janvier 2023.
 
-### Etape 3 : Associer la fonction au DAG
+### **Etape 3 : Associer la fonction au DAG**
 Pour associer la fonction *helloworld* au DAG, il faut écrire une tache.
 
 ```python
@@ -36,7 +36,7 @@ hello_task = PythonOperator(
 ```
 On instancie un objet PythonOperator qui utilise l'identifiant *hello_task* (`task_id='hello_task'`) et appelle la fonction *helloworld* (`python_callable=helloworld`).
 
-### Etape 4 : On rassemble chaque étape !
+### **Etape 4 : On rassemble chaque étape !**
 
 Pour fonctionner, il faut également inclure les importations requises. Au final, notre dag va ressembler à ceci :
 
@@ -60,19 +60,23 @@ with DAG(
     )
 ```
 
+A la lecture du code que vous venez d'écrire, quel sera selon vous le comportement de ce DAG ?
+
 Une fois le DAG chargé dans Airflow, vous pouvez le retrouver dans la liste :
 ![DAG helloworld](./image/helloworld_UI1.PNG)
 
+
+
 Il ne reste plus qu'à l'activer en cliquant sur le bouton à gauche.
 
-### Etape 5 : Observer le fonctionnement du DAG
+### **Etape 5 : Observer le fonctionnement du DAG**
 
 Observez les indicateurs d'exécution puis cliquez sur le DAG et explorez l'interface.
 ??? info "Indicateurs d'exécution"
 
 	![DAG helloworld](./image/helloworld_exec1.PNG)
 
-Tout se passe-t-il vous l'auriez prévu ?
+Tout se passe-t-il vous l'aviez prévu ?
 
 ??? warning
 	

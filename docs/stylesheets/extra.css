@@ -33,3 +33,47 @@
 .floating-toc a:hover {
     text-decoration: underline;
 }
+
+.md-content {
+    margin-right: 60px;  
+    padding-right: 20px; 
+}
+
+/*
+.floating-toc {
+    position: fixed;
+    top: 10%; 
+    right: 20px;  
+    width: 250px; 
+    max-height: 80%; 
+    overflow-y: auto; 
+    background-color: rgba(255, 255, 255, 0.8); 
+    padding: 10px;  
+    z-index: 1000; 
+    margin-left: 80px;
+    margin-right: 0px;
+}
+
+
+.floating-toc h2 {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+}
+
+.floating-toc ul {
+    list-style: none;
+    padding: 0;
+}
+
+.floating-toc li {
+    margin: 5px 0;
+}
+
+.floating-toc a {
+    text-decoration: none;
+    color: #0073e6;
+}
+
+.floating-toc a:hover {
+    text-decoration: underline;
+} */
